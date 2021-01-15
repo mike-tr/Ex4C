@@ -13,6 +13,9 @@ typedef struct Node {
     struct Node *children[LETTERS]; // the children of this node
 } * pNode, Node;
 
+/**
+ * public method for the user to create the root for the trie 
+ **/
 pTrie CreateTrie() {
     pTrie trie = (pTrie)malloc(sizeof(Node));
     if (trie == NULL) {
@@ -26,6 +29,9 @@ pTrie CreateTrie() {
     return trie;
 }
 
+/**
+ * create a new Node, returns the node if all godd, otherwise returns NULL 
+ **/
 pNode CreateNode(char letter) {
     pNode node = (pNode)malloc(sizeof(Node));
     if (node == NULL) {
@@ -41,6 +47,13 @@ pNode CreateNode(char letter) {
     return node;
 }
 
+/**
+ * given a word to add, add it to the trie
+ * this method is iterative, as we dont really need recursion in here
+ * if allocation of children fails in any point returns false,
+ * 
+ * otherwise all good return true 
+ **/
 boolean TrieAddWord(pTrie trie, char *word) {
     // we assume the word doesn't contain any letter that is not from a to z lowercase.
     if (*word == 0) {
@@ -63,11 +76,15 @@ boolean TrieAddWord(pTrie trie, char *word) {
             node->count++;
         }
         word++;
+        trie->ends++;
     }
     node->ends++;
     return True;
 }
 
+/**
+ * hidden method that destroys the node and all its children by recursion 
+ **/
 void NodeDestroy(pNode node) {
     if (node == NULL) {
         return;
@@ -78,23 +95,31 @@ void NodeDestroy(pNode node) {
     free(node);
 }
 
+/**
+ * this is the public method that the used see from outside 
+ **/
 void TrieDestroy(pTrie trie) {
     NodeDestroy(trie);
 }
 
-boolean NodeExtractWord(pNode node, char **words, int *counts, int *index, const char *parent, int size) {
-    char *word = (char *)malloc(sizeof(char) * (size + 2));
-    if (word == NULL) {
-        return False;
-    }
-
-    if (size > 0) {
-        strcpy(word, parent);
-    }
-    word[size] = node->letter;
-    word[size + 1] = '\0';
+/**
+ * by recursion go over all the nodes in order,
+ * and add the word to the array if the node represent a words ending.
+ * 
+ * in anycase pass the substring of the node to the children
+ * and if the word not used free it at the end. 
+ **/
+boolean NodeExtractWord(pNode node, char **words, int *counts, int *index, char *parent, int size) {
+    parent[size] = node->letter;
+    parent[size + 1] = '\0';
 
     if (node->ends > 0) {
+        char *word = (char *)malloc(sizeof(char) * (size + 2));
+        if (word == NULL) {
+            return False;
+        }
+        strcpy(word, parent);
+
         words[*index] = word;
         counts[*index] = node->ends;
         (*index)++;
@@ -104,24 +129,18 @@ boolean NodeExtractWord(pNode node, char **words, int *counts, int *index, const
     for (int i = 0; i < LETTERS; i++) {
         current = node->children[i];
         if (current != NULL) {
-            if (NodeExtractWord(current, words, counts, index, word, size + 1) == False) {
-                if (node->ends == 0) {
-                    free(word);
-                }
+            if (NodeExtractWord(current, words, counts, index, parent, size + 1) == False) {
                 return False;
             }
         }
     }
 
-    if (node->ends == 0) {
-        // if the number of words ending with this prefix is 0
-        // then we are not using this prefix and can discard it.
-        // a.k.a we will forget the point to it after closing this fucntion so we must free it.
-        free(word);
-    }
     return True;
 }
 
+/**
+ * free the array of strings and all the strings in the array 
+ **/
 void freeWords(char **words, int size) {
     for (int i = 0; i < size; i++) {
         if (words[i] != NULL) {
@@ -131,9 +150,18 @@ void freeWords(char **words, int size) {
     free(words);
 }
 
+/**
+ * create the Array of strings
+ * and populate it with the relative strings 
+ **/
 char **ExtractWords(pTrie trie, int counts[]) {
     char **words = (char **)calloc(sizeof(char *), trie->count);
     if (words == NULL) {
+        return NULL;
+    }
+    char *word = (char *)calloc(sizeof(char), trie->ends + 1);
+    if (word == NULL) {
+        free(words);
         return NULL;
     }
     pNode current = NULL;
@@ -141,16 +169,28 @@ char **ExtractWords(pTrie trie, int counts[]) {
     for (int i = 0; i < LETTERS; i++) {
         current = trie->children[i];
         if (current != NULL) {
-            if (NodeExtractWord(current, words, counts, &index, NULL, 0) == False) {
+            if (NodeExtractWord(current, words, counts, &index, word, 0) == False) {
                 freeWords(words, trie->count);
+                free(word);
                 return NULL;
             }
         }
     }
+    free(word);
     return words;
 }
 
+/**
+ * this method prints the content of the trie, we instantiate an array of strings,
+ * the array would at most contain  trie->count words that is trie->count counts how many words are in the trie,
+ * but not unqiue words.
+ * */
 boolean TriePrint(pTrie trie, boolean reveresed) {
+    // this overall sdtructure is as follows
+    // we would create an array of strings and add each unique string in there
+    // we also create an array of "counds" that represent how much of each word in the trie
+
+    // the overall system uses a lot of malloc's and can be definetly improved
     int *counts = (int *)calloc(sizeof(int), trie->count);
     if (counts == NULL) {
         printf("something went wrong while prining error in allocation\n");
