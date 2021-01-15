@@ -30,7 +30,8 @@ pTrie CreateTrie() {
 }
 
 /**
- * create a new Node, returns the node if all godd, otherwise returns NULL 
+ * create a new Node, where letter would represent this crossroad
+ * returns the node if all godd, otherwise returns NULL 
  **/
 pNode CreateNode(char letter) {
     pNode node = (pNode)malloc(sizeof(Node));
@@ -68,6 +69,7 @@ boolean TrieAddWord(pTrie trie, char *word) {
             node = node->children[index];
             node->count++;
         } else {
+            // a.k.a this node doesn't exist so create a new one.
             node->children[index] = CreateNode(*word);
             node = node->children[index];
             if (node == NULL) {
@@ -76,6 +78,8 @@ boolean TrieAddWord(pTrie trie, char *word) {
             node->count++;
         }
         word++;
+        // node->ends in general holds how many words ends with that prefix, but we use it in trie
+        // as a counter to the "longest word".
         trie->ends++;
     }
     node->ends++;
@@ -114,6 +118,8 @@ boolean NodeExtractWord(pNode node, char **words, int *counts, int *index, char 
     parent[size + 1] = '\0';
 
     if (node->ends > 0) {
+        // when we see that this prefix is a standalone word we want to save it in the array
+        // hance we create a new string with this exact number of characters and it would hold the right word reference
         char *word = (char *)malloc(sizeof(char) * (size + 2));
         if (word == NULL) {
             return False;
@@ -142,6 +148,7 @@ boolean NodeExtractWord(pNode node, char **words, int *counts, int *index, char 
  * free the array of strings and all the strings in the array 
  **/
 void freeWords(char **words, int size) {
+    // loop over all the words in the string array and free everyword that is not null
     for (int i = 0; i < size; i++) {
         if (words[i] != NULL) {
             free(words[i]);
@@ -159,6 +166,9 @@ char **ExtractWords(pTrie trie, int counts[]) {
     if (words == NULL) {
         return NULL;
     }
+
+    // this is a temporary word that would hold the prefix of the parent node
+    // hence we always know what was the "ending" of the word that our parent had.
     char *word = (char *)calloc(sizeof(char), trie->ends + 1);
     if (word == NULL) {
         free(words);
@@ -176,6 +186,7 @@ char **ExtractWords(pTrie trie, int counts[]) {
             }
         }
     }
+    // when we finish we dont need the temp word anymore so free it.
     free(word);
     return words;
 }
@@ -188,9 +199,12 @@ char **ExtractWords(pTrie trie, int counts[]) {
 boolean TriePrint(pTrie trie, boolean reveresed) {
     // this overall sdtructure is as follows
     // we would create an array of strings and add each unique string in there
-    // we also create an array of "counds" that represent how much of each word in the trie
+    // we also create an array of "counts" that represent how much of each word in the trie
 
-    // the overall system uses a lot of malloc's and can be definetly improved
+    // overall we can dump the idea of the array and just print it mid flight,
+    // but the downside would be that we would basically need to create a method for each possible sort we want
+    // as right now we would have an array, and then we can sort it in anyway ( its already sorted from small to big )
+    // so we can just print the array in reverse.
     int *counts = (int *)calloc(sizeof(int), trie->count);
     if (counts == NULL) {
         printf("something went wrong while prining error in allocation\n");
