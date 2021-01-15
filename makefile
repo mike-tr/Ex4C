@@ -14,6 +14,9 @@ MYOBJECTS = reader.o trie.o
 run_v: $(PROGRAM)
 	valgrind ./$< < $(TARGET_INPUT)
 
+run_r: $(PROGRAM)
+	./$< r < $(TARGET_INPUT)
+
 run: $(PROGRAM)
 	./$< < $(TARGET_INPUT)
 
