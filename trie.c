@@ -104,7 +104,12 @@ boolean NodeExtractWord(pNode node, char **words, int *counts, int *index, const
     for (int i = 0; i < LETTERS; i++) {
         current = node->children[i];
         if (current != NULL) {
-            NodeExtractWord(current, words, counts, index, word, size + 1);
+            if (NodeExtractWord(current, words, counts, index, word, size + 1) == False) {
+                if (node->ends == 0) {
+                    free(word);
+                }
+                return False;
+            }
         }
     }
 
@@ -117,6 +122,15 @@ boolean NodeExtractWord(pNode node, char **words, int *counts, int *index, const
     return True;
 }
 
+void freeWords(char **words, int size) {
+    for (int i = 0; i < size; i++) {
+        if (words[i] != NULL) {
+            free(words[i]);
+        }
+    }
+    free(words);
+}
+
 char **ExtractWords(pTrie trie, int counts[]) {
     char **words = (char **)calloc(sizeof(char *), trie->count);
     if (words == NULL) {
@@ -127,31 +141,25 @@ char **ExtractWords(pTrie trie, int counts[]) {
     for (int i = 0; i < LETTERS; i++) {
         current = trie->children[i];
         if (current != NULL) {
-            NodeExtractWord(current, words, counts, &index, NULL, 0);
+            if (NodeExtractWord(current, words, counts, &index, NULL, 0) == False) {
+                freeWords(words, trie->count);
+                return NULL;
+            }
         }
     }
     return words;
 }
 
-void freeArrs(char **words, int *count, int size) {
-    free(count);
-    for (int i = 0; i < size; i++) {
-        if (words[i] != NULL) {
-            free(words[i]);
-        }
-    }
-    free(words);
-}
-
 boolean TriePrint(pTrie trie, boolean reveresed) {
     int *counts = (int *)calloc(sizeof(int), trie->count);
     if (counts == NULL) {
-        printf("something went wrong while prining error in allocation");
+        printf("something went wrong while prining error in allocation\n");
         return False;
     }
     char **words = ExtractWords(trie, counts);
     if (words == NULL) {
-        printf("something went wrong while prining error in allocation");
+        free(counts);
+        printf("something went wrong while prining error in allocation\n");
         return False;
     }
 
@@ -169,6 +177,7 @@ boolean TriePrint(pTrie trie, boolean reveresed) {
         }
     }
 
-    freeArrs(words, counts, trie->count);
+    free(counts);
+    freeWords(words, trie->count);
     return True;
 }

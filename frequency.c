@@ -7,14 +7,19 @@ int main(int argc, char *argv[]) {
     pInputReader reader = createReader();
     pTrie trie = CreateTrie();
 
+    boolean all_good = False;
     while (ReaderDone(reader) == False) {
-        TrieAddWord(trie, readSLNextWord(reader));
+        all_good = TrieAddWord(trie, readSLNextWord(reader));
     }
 
-    if (argc > 1 && strcmp(argv[1], "r") == 0) {
-        TriePrint(trie, True);
+    if (all_good) {
+        if (argc > 1 && strcmp(argv[1], "r") == 0) {
+            TriePrint(trie, True);
+        } else {
+            TriePrint(trie, False);
+        }
     } else {
-        TriePrint(trie, False);
+        printf("woops looks like there was an allocation problem... exiting...");
     }
 
     DestroyReader(reader);
